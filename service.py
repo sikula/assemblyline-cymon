@@ -1,5 +1,8 @@
+import json
+
 from assemblyline.al.service.base import ServiceBase
 from assemblyline.al.common.result import Result, ResultSection, SCORE
+from assemblyline.common.exceptions import RecoverableError
 
 class CymonAPIService(ServiceBase):
     SERVICE_CATEGORY        = "External"
@@ -14,7 +17,7 @@ class CymonAPIService(ServiceBase):
     SERVICE_STAGE           = "CORE"
     SERVICE_DEFAULT_CONFIG  = {
         'API_KEY': '',
-        'BASE_URL': 'https://api.cymon.io/v2/ioc/search'
+        'BASE_URL': 'https://api.cymon.io/v2/ioc/search/sha256'
     }
 
     def __init__(self, cfg=None):
@@ -27,13 +30,37 @@ class CymonAPIService(ServiceBase):
         global requests
         import requests
 
+
     def start(self):
         self.log.debug("CymonAPIService Started")
 
     
     def execute(self, request):
-        result  = Result()
-        section = ResultSection(SCORE.NULL, "Cymon API Service Complete")
-        section.add_line("Nothing done.")
-        result.add_section(section)
-        request.result = result
+        response = self.process_file(request)
+        result   = self.parse_results(response)
+        requests.result = result
+
+
+
+
+    def process_file(self, request):
+        url = self.cfg.get('BASE_URL') + request.sha256
+        params = requests.post(url)
+
+        try:
+            json_response = r.json()
+        except ValueError:
+            self.log.warn(
+                "Invalid response from Cymon, ",
+                "HTTP Code: %s",
+                "content length: %i",
+                "headers: %s" % (r.status_code, len(r.content), repr(r.headers))    
+            )
+            if len(r.content) == 0:
+                raise RecoverableError("Cymon didn't return a JSON object, HTTP code %s" % r.status_code)
+            raise
+        return json_response
+
+
+    def parse_results(self, request):
+        pass
