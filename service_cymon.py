@@ -45,7 +45,7 @@ class CymonAPIService(ServiceBase):
 
     def process_file(self, request):
         url = self.cfg.get('BASE_URL') + request.sha256
-        params = requests.post(url)
+        params = requests.get(url)
 
         try:
             json_response = r.json()
